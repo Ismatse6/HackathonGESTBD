@@ -77,7 +77,7 @@ class Profesor(Base):
         "ProfesoresAsignaturas", back_populates="profesor", cascade="all, delete-orphan"
     )
     # proxy para obtener list[Asignatura] directamente
-    asignaturas: Mapped[List["Asignatura"]] = association_proxy("asignaturas_assoc", "asignatura")
+    asignaturas: Mapped[List["Asignatura"]] = association_proxy("asignaturas_assoc", "asignatura", creator=lambda asignatura: ProfesoresAsignaturas(asignatura=asignatura))
 
     def __repr__(self):
         return f"<Profesor(id={self.id}, nombre={self.nombre!r})>"
@@ -102,7 +102,7 @@ class Asignatura(Base):
     profesores_assoc: Mapped[List["ProfesoresAsignaturas"]] = relationship(
         "ProfesoresAsignaturas", back_populates="asignatura", cascade="all, delete-orphan"
     )
-    profesores: Mapped[List[Profesor]] = association_proxy("profesores_assoc", "profesor")
+    profesores: Mapped[List[Profesor]] = association_proxy("profesores_assoc", "profesor", creator=lambda profesor: ProfesoresAsignaturas(profesor=profesor))
 
     def __repr__(self):
         return f"<Asignatura(id={self.id}, nombre={self.nombre!r})>"

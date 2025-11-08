@@ -61,24 +61,27 @@ for file in os.listdir(directory):
         }])
         df_asignaturas_total = pd.concat([df_asignaturas_total, df_asignatura], ignore_index=True)
         
-        df_titulacion = pd.DataFrame([{
-            "id": plan_estudios,
-            "nombre": nombre_titulacion,
-            "tipo_estudio": "Grado" if "Grado" in plan_estudios else "Máster"
-        }])
-        df_titulaciones_total = pd.concat([df_titulaciones_total, df_titulacion], ignore_index=True)
+        if plan_estudios not in df_titulaciones_total['id'].values:
+            df_titulacion = pd.DataFrame([{
+                "id": plan_estudios,
+                "nombre": nombre_titulacion,
+                "tipo_estudio": "Grado" if "Grado" in plan_estudios else "Máster"
+            }])
+            df_titulaciones_total = pd.concat([df_titulaciones_total, df_titulacion], ignore_index=True)
 
-        df_escuela = pd.DataFrame([{
-            "id": id_escuela,
-            "nombre": nombre_escuela
-        }])
-        df_escuelas_total = pd.concat([df_escuelas_total, df_escuela], ignore_index=True)
+        if id_escuela not in df_escuelas_total['id'].values:
+            df_escuela = pd.DataFrame([{
+                "id": id_escuela,
+                "nombre": nombre_escuela
+            }])
+            df_escuelas_total = pd.concat([df_escuelas_total, df_escuela], ignore_index=True)
 
-        df_titulacion_escuela = pd.DataFrame([{
-            "titulacion_id": plan_estudios,
-            "escuela_id": id_escuela
-        }])
-        df_titulaciones_escuelas_total = pd.concat([df_titulaciones_escuelas_total, df_titulacion_escuela], ignore_index=True)
+        if df_titulaciones_escuelas_total.get((df_titulaciones_escuelas_total['titulacion_id'] == plan_estudios) & (df_titulaciones_escuelas_total['escuela_id'] == id_escuela)).any().any() == False:
+            df_titulacion_escuela = pd.DataFrame([{
+                "titulacion_id": plan_estudios,
+                "escuela_id": id_escuela
+            }])
+            df_titulaciones_escuelas_total = pd.concat([df_titulaciones_escuelas_total, df_titulacion_escuela], ignore_index=True)
         
         df_titulacion_asignatura = pd.DataFrame([{
             "titulacion_id": plan_estudios,
@@ -272,15 +275,12 @@ mapping = {
     }
 }
 
-
 if not es.indices.exists(index=index_name):
     es.indices.create(index=index_name, body=mapping)
 
 documentos = []
-i = 0
 for file in os.listdir(directory):
     if file.endswith(".pdf"):
-        i += 1
         ruta = os.path.join(directory, file)
 
         ## Conocimientos previos recomendados

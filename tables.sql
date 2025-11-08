@@ -48,3 +48,12 @@ CREATE TABLE TitulacionesEscuelas (
     FOREIGN KEY (titulacion_id) REFERENCES Titulaciones(id),
     FOREIGN KEY (escuela_id) REFERENCES Escuelas(id)
 );
+
+CREATE TABLE Bibliografias (
+    id SERIAL PRIMARY KEY,
+    asignatura_id INT, 
+    nombre VARCHAR(100),
+    autores VARCHAR(100),
+    url VARCHAR(200),
+    FOREIGN KEY (asignatura_id) REFERENCES Asignaturas(id)  
+);

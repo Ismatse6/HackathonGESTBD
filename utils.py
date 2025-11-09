@@ -7,7 +7,7 @@ from urllib.parse import quote
 from pathlib import Path
 import re
 import re
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import bulk, BulkIndexError
 
 
 ######################
@@ -439,12 +439,7 @@ def extraer_descripcion_asignatura(ruta_pdf, model):
 
     vector = model.encode(descripcion_texto).tolist()
 
-    descripcion_asignatura = {
-        "texto": descripcion_texto.strip(),
-        "vector": vector
-    }
-
-    return descripcion_asignatura
+    return descripcion_texto, vector
 
 # Competencias y resultados de aprendizaje
 
@@ -470,14 +465,12 @@ def extraer_competencias_resultados(texto, model):
     
     for i, codigo in enumerate(codigos):
         texto_competencia = textos[i] if i < len(textos) else ""
-        vector = model.encode(texto_competencia)       
         competencias.append({
             "codigo": codigo.strip(),
             "texto": texto_competencia,
-            "vector": vector.tolist() # 512 dimensiones
         })
-    
-    return competencias
+    vector = model.encode(" ".join(textos)).tolist()      
+    return competencias, vector
 
 def extraer_competencias(ruta, model):
     texto_competencias = extraer_seccion(
@@ -486,9 +479,7 @@ def extraer_competencias(ruta, model):
         inicio = "Competencias",
         fin = "Resultados del aprendizaje"
     )
-    competencias = extraer_competencias_resultados(texto_competencias, model)
-
-    return competencias
+    return  extraer_competencias_resultados(texto_competencias, model)
 
 
 
@@ -500,26 +491,20 @@ def extraer_resultados_aprendizaje(ruta, model):
         inicio = "Resultados del aprendizaje",
         fin = "Descripción de la asignatura y temario"
     )
-    resultados = extraer_competencias_resultados(texto_resultados, model)
-    
-    return resultados
+
+    return extraer_competencias_resultados(texto_resultados, model)
 
 def extraer_conocimientos_previos(pdf_path, model):
     extraido = extraer_seccion(pdf_path, titulo="Conocimientos previos recomendados", inicio="Asignaturas previas que se recomienda haber cursado", fin="Competencias")
-    conocimientos = ""
+    conocimientos_previos = ""
     for line in extraido.splitlines():
         if not "Competencias y resultados de aprendizaje" in line:
-            conocimientos += line + "\n"
-    conocimientos = conocimientos.strip()
+            conocimientos_previos += line + "\n"
+    conocimientos_previos = conocimientos_previos.strip()
 
-    vector = model.encode(conocimientos).tolist()
+    vector = model.encode(conocimientos_previos).tolist()
 
-    conocimientos_previos = {
-        "texto": conocimientos.strip(),
-        "vector": vector
-    }
-
-    return conocimientos_previos
+    return conocimientos_previos, vector
 
 
 # Descripción de la asignatura y temario

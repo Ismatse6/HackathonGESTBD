@@ -72,7 +72,8 @@ for file in os.listdir(directory):
         if df_escuelas_total.empty or id_escuela not in df_escuelas_total['id'].values:
             df_escuela = pd.DataFrame([{
                 "id": id_escuela,
-                "nombre": nombre_escuela
+                "nombre": nombre_escuela,
+                "entidad_dbpedia": "https://es.dbpedia.org/resource/Escuela_Técnica_Superior_de_Ingeniería_de_Sistemas_Informáticos_(Universidad_Politécnica_de_Madrid)"
             }])
             df_escuelas_total = pd.concat([df_escuelas_total, df_escuela], ignore_index=True)
 
@@ -309,4 +310,4 @@ for file in os.listdir(directory):
         documentos.append(documento)
 
 bulk_index_data(es, documentos, index_name)
-     
+

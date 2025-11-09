@@ -125,6 +125,11 @@ upm:subtema rdf:type owl:DatatypeProperty ;
             rdfs:range xsd:string ;
             rdfs:label "subtema"@es .
 
+upm:entidad_dbpedia rdf:type owl:DatatypeProperty ;
+                    rdfs:domain upm:Escuela ;
+                    rdfs:range xsd:string ;
+                    rdfs:label "entidad_dbpedia"@es .
+
 ###############################################################################
 # Object properties (relaciones entre recursos)
 ###############################################################################

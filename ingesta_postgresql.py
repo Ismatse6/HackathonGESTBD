@@ -49,37 +49,41 @@ for file in os.listdir(directory):
             "nombre": nombre_asignatura,
             "numero_creditos": num_creditos,
             "agno_academico": curso_texto,
-            "direcion_url": "DESCONOCIDO", # ESTO FALTA, LO TENGO QUE BORRAR
             "semestre": semestre_texto,
             "idioma": idioma
         }])
         df_asignaturas_total = pd.concat([df_asignaturas_total, df_asignatura], ignore_index=True)
         
-        df_titulacion = pd.DataFrame([{
-            "id": plan_estudios,
-            "nombre": nombre_titulacion,
-            "tipo_estudio": "Grado" if "Grado" in plan_estudios else "Máster"
-        }])
-        df_titulaciones_total = pd.concat([df_titulaciones_total, df_titulacion], ignore_index=True)
+        if df_titulaciones_total.empty or plan_estudios not in df_titulaciones_total['id'].values:
+            df_titulacion = pd.DataFrame([{
+                "id": plan_estudios,
+                "nombre": nombre_titulacion,
+                "tipo_estudio": "Grado" if "Grado" in plan_estudios else "Máster"
+            }])
+            df_titulaciones_total = pd.concat([df_titulaciones_total, df_titulacion], ignore_index=True)
 
-        df_escuela = pd.DataFrame([{
-            "id": id_escuela,
-            "nombre": nombre_escuela
-        }])
-        df_escuelas_total = pd.concat([df_escuelas_total, df_escuela], ignore_index=True)
+        if df_escuelas_total.empty or id_escuela not in df_escuelas_total['id'].values:
+            df_escuela = pd.DataFrame([{
+                "id": id_escuela,
+                "nombre": nombre_escuela,
+                "entidad_dbpedia": "https://es.dbpedia.org/resource/Escuela_Técnica_Superior_de_Ingeniería_de_Sistemas_Informáticos_(Universidad_Politécnica_de_Madrid)"
+            }])
+            df_escuelas_total = pd.concat([df_escuelas_total, df_escuela], ignore_index=True)
 
-        df_titulacion_escuela = pd.DataFrame([{
-            "titulacion_id": plan_estudios,
-            "escuela_id": id_escuela
-        }])
-        df_titulaciones_escuelas_total = pd.concat([df_titulaciones_escuelas_total, df_titulacion_escuela], ignore_index=True)
+        if df_titulaciones_escuelas_total.empty or df_titulaciones_escuelas_total.get((df_titulaciones_escuelas_total['titulacion_id'] == plan_estudios) & (df_titulaciones_escuelas_total['escuela_id'] == id_escuela)).any().any() == False:
+            df_titulacion_escuela = pd.DataFrame([{
+                "titulacion_id": plan_estudios,
+                "escuela_id": id_escuela
+            }])
+            df_titulaciones_escuelas_total = pd.concat([df_titulaciones_escuelas_total, df_titulacion_escuela], ignore_index=True)
         
         df_titulacion_asignatura = pd.DataFrame([{
             "titulacion_id": plan_estudios,
             "asignatura_id": id_asignatura
         }])
         df_titulaciones_asignaturas_total = pd.concat([df_titulaciones_asignaturas_total, df_titulacion_asignatura], ignore_index=True)
-        
+
+        """
         # Bibliografia
         df_scrap_bibliografia = scrapBibliography(pdf_path, {"nombre", "tipo", "observaciones"})  
 
@@ -100,6 +104,8 @@ for file in os.listdir(directory):
             df_bibliografia_total =  pd.concat([df_bibliografia_total, dfs_bibliografia], ignore_index=True).drop_duplicates()
             list_bibliografias = df_bibliografia_total['Nombre'].unique()
             df_bibliografia_asignatura = pd.concat([df_bibliografia_asignatura,pd.DataFrame({'Nombre':list_bibliografias, 'id_asignatura': [id_asignatura]*len(list_bibliografias)})])
+
+        """
 
         # Profesores
         df_profesores = scrapProfesores(pdf_path, {"nombre", "correo electrónico"})
@@ -160,11 +166,11 @@ engine = create_engine(
 )
 
 # Cargar DataFrame Asignaturas
-df_asignaturas_total.to_sql('Asignaturas', engine, if_exists="replace", index=False)
-df_titulaciones_total.to_sql('Titulaciones', engine, if_exists="replace", index=False)
-df_escuelas_total.to_sql('Escuelas', engine, if_exists="replace", index=False)
-df_titulaciones_asignaturas_total.to_sql('TitulacionesAsignaturas', engine, if_exists="replace", index=False)
-df_titulaciones_escuelas_total.to_sql('TitulacionesEscuelas', engine, if_exists="replace", index=False)
+df_asignaturas_total.to_sql('asignaturas', engine, if_exists="append", index=False)
+df_titulaciones_total.to_sql('titulaciones', engine, if_exists="append", index=False)
+df_escuelas_total.to_sql('escuelas', engine, if_exists="append", index=False)
+df_titulaciones_asignaturas_total.to_sql('titulacionesasignaturas', engine, if_exists="append", index=False)
+df_titulaciones_escuelas_total.to_sql('titulacionesescuelas', engine, if_exists="append", index=False)
 
 # Cargar DataFrame Profesores
 df_profesores_total = df_profesores_total.rename(columns={
@@ -172,17 +178,16 @@ df_profesores_total = df_profesores_total.rename(columns={
     "Correo electrónico": "correo_electronico"
 })
 df_profesores_total = df_profesores_total.reset_index().rename(columns={'index': 'id'})
-df_profesores_total.to_sql('Profesores', engine, if_exists="replace", index=False)
+df_profesores_total.to_sql('profesores', engine, if_exists="append", index=False)
 
 # Cargar DataFrame Profesores - Asignaturas
-df_profesores_asignaturas_total.to_sql('ProfesoresAsignaturas', engine, if_exists="replace", index=False)
+df_profesores_asignaturas_total.to_sql('profesoresasignaturas', engine, if_exists="append", index=False)
                 
 # Cargar DataFrame Bibliografias
 df_bibliografia_total['id'] = df_bibliografia_total.index
-df_bibliografia_total.to_sql('Bibliografias', engine, if_exists="replace", index=False)
-
+df_bibliografia_total.to_sql('bibliografias', engine, if_exists="append", index=False)
 # Cargar DataFrame Bibliografias - Asignaturas
 if not df_bibliografia_total.empty:
     df_bibliografia_asignatura = pd.merge(df_bibliografia_asignatura, df_bibliografia_total, on= "Nombre", how ="inner")
     df_bibliografia_asignatura = df_bibliografia_asignatura[["id","asignatura_id"]].rename(columns={"id": "bibliografia_id"}, inplace=True)
-    df_bibliografia_asignatura.to_sql('BibliografiaAsignaturas', engine, if_exists="replace", index=False)
+    df_bibliografia_asignatura.to_sql('bibliografiaasignaturas', engine, if_exists="append", index=False)

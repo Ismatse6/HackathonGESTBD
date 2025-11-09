@@ -61,7 +61,7 @@ for file in os.listdir(directory):
         }])
         df_asignaturas_total = pd.concat([df_asignaturas_total, df_asignatura], ignore_index=True)
         
-        if plan_estudios not in df_titulaciones_total['id'].values:
+        if df_titulaciones_total.empty or plan_estudios not in df_titulaciones_total['id'].values:
             df_titulacion = pd.DataFrame([{
                 "id": plan_estudios,
                 "nombre": nombre_titulacion,
@@ -69,14 +69,14 @@ for file in os.listdir(directory):
             }])
             df_titulaciones_total = pd.concat([df_titulaciones_total, df_titulacion], ignore_index=True)
 
-        if id_escuela not in df_escuelas_total['id'].values:
+        if df_escuelas_total.empty or id_escuela not in df_escuelas_total['id'].values:
             df_escuela = pd.DataFrame([{
                 "id": id_escuela,
                 "nombre": nombre_escuela
             }])
             df_escuelas_total = pd.concat([df_escuelas_total, df_escuela], ignore_index=True)
 
-        if df_titulaciones_escuelas_total.get((df_titulaciones_escuelas_total['titulacion_id'] == plan_estudios) & (df_titulaciones_escuelas_total['escuela_id'] == id_escuela)).any().any() == False:
+        if df_titulaciones_escuelas_total.empty or df_titulaciones_escuelas_total.get((df_titulaciones_escuelas_total['titulacion_id'] == plan_estudios) & (df_titulaciones_escuelas_total['escuela_id'] == id_escuela)).any().any() == False:
             df_titulacion_escuela = pd.DataFrame([{
                 "titulacion_id": plan_estudios,
                 "escuela_id": id_escuela
@@ -88,7 +88,7 @@ for file in os.listdir(directory):
             "asignatura_id": id_asignatura
         }])
         df_titulaciones_asignaturas_total = pd.concat([df_titulaciones_asignaturas_total, df_titulacion_asignatura], ignore_index=True)
-        
+
         # Bibliografia
         df_scrap_bibliografia = scrapBibliography(pdf_path, {"nombre", "tipo", "observaciones"})  
 
@@ -109,10 +109,12 @@ for file in os.listdir(directory):
             df_bibliografia_total =  pd.concat([df_bibliografia_total, dfs_bibliografia], ignore_index=True).drop_duplicates()
             list_bibliografias = df_bibliografia_total['Nombre'].unique()
             df_bibliografia_asignatura = pd.concat([df_bibliografia_asignatura,pd.DataFrame({'Nombre':list_bibliografias, 'id_asignatura': [id_asignatura]*len(list_bibliografias)})])
-                
 
         # Profesores
         df_profesores = scrapProfesores(pdf_path, {"nombre", "correo electrónico"})
+        print('profes')
+        print(df_profesores)
+        print()
         if not df_profesores_total.empty:
             df_profesores_total = pd.concat([df_profesores_total, df_profesores], ignore_index=True)
             df_profesores_total = df_profesores_total.drop_duplicates(
@@ -125,7 +127,6 @@ for file in os.listdir(directory):
         
         # Profesores - Asignaturas
         df_profesores_asignaturas = pd.DataFrame()
-        print("DataFrame profesores creados")
         for _, row in df_profesores.iterrows():
             profesor_correo = row["Correo electrónico"]
             try:
@@ -137,12 +138,22 @@ for file in os.listdir(directory):
                 "asignatura_id": id_asignatura
             }])
             df_profesores_asignaturas = pd.concat([df_profesores_asignaturas, df_temp], ignore_index=True)
-            print("Concatenar dataframe")
         if not df_profesores_asignaturas_total.empty:
-            print("DataFrame Vacio")
             df_profesores_asignaturas_total = pd.concat([df_profesores_asignaturas_total, df_profesores_asignaturas], ignore_index=True)
         else:
             df_profesores_asignaturas_total = df_profesores_asignaturas.copy()
+
+print('HEMOS LLEGADO AL FINAL')
+
+print('df_asignaturas_total:', df_asignaturas_total.head())
+print('df_escuelas_total:', df_escuelas_total.head())
+print('df_titulaciones_total:', df_titulaciones_total.head())
+print('df_bibliografia_total:', df_bibliografia_total.head())
+print('df_profesores_total:', df_profesores_total.head())
+print('df_bibliografia_asignatura:', df_bibliografia_asignatura.head())
+print('df_profesores_asignaturas_total:', df_profesores_asignaturas_total.head())
+print('df_titulaciones_escuelas_total:', df_titulaciones_escuelas_total.head())
+print('df_titulaciones_asignaturas_total:', df_titulaciones_asignaturas_total.head())
 
 ###########################
 ###### POSTGRESQL ########
@@ -158,32 +169,33 @@ engine = create_engine(
 )
 
 # Cargar DataFrame Asignaturas
-df_asignaturas_total.to_sql('Asignaturas', engine, if_exists="replace", index=False)
-df_titulaciones_total.to_sql('Titulaciones', engine, if_exists="replace", index=False)
-df_escuelas_total.to_sql('Escuelas', engine, if_exists="replace", index=False)
-df_titulaciones_asignaturas_total.to_sql('TitulacionesAsignaturas', engine, if_exists="replace", index=False)
-df_titulaciones_escuelas_total.to_sql('TitulacionesEscuelas', engine, if_exists="replace", index=False)
+df_asignaturas_total.to_sql('asignaturas', engine, if_exists="append", index=False)
+df_titulaciones_total.to_sql('titulaciones', engine, if_exists="append", index=False)
+df_escuelas_total.to_sql('escuelas', engine, if_exists="append", index=False)
+df_titulaciones_asignaturas_total.to_sql('titulacionesasignaturas', engine, if_exists="append", index=False)
+df_titulaciones_escuelas_total.to_sql('titulacionesescuelas', engine, if_exists="append", index=False)
 
 # Cargar DataFrame Profesores
 df_profesores_total = df_profesores_total.rename(columns={
     "Nombre": "nombre",
     "Correo electrónico": "correo_electronico"
 })
+
 df_profesores_total = df_profesores_total.reset_index().rename(columns={'index': 'id'})
-df_profesores_total.to_sql('Profesores', engine, if_exists="replace", index=False)
+df_profesores_total.to_sql('profesores', engine, if_exists="append", index=False)
 
 # Cargar DataFrame Profesores - Asignaturas
-df_profesores_asignaturas_total.to_sql('ProfesoresAsignaturas', engine, if_exists="replace", index=False)
+df_profesores_asignaturas_total.to_sql('profesoresasignaturas', engine, if_exists="append", index=False)
                 
 # Cargar DataFrame Bibliografias
 df_bibliografia_total['id'] = df_bibliografia_total.index
-df_bibliografia_total.to_sql('Bibliografias', engine, if_exists="replace", index=False)
+df_bibliografia_total.to_sql('bibliografias', engine, if_exists="append", index=False)
 
 # Cargar DataFrame Bibliografias - Asignaturas
 if not df_bibliografia_total.empty:
     df_bibliografia_asignatura = pd.merge(df_bibliografia_asignatura, df_bibliografia_total, on= "Nombre", how ="inner")
     df_bibliografia_asignatura = df_bibliografia_asignatura[["id","asignatura_id"]].rename(columns={"id": "bibliografia_id"}, inplace=True)
-    df_bibliografia_asignatura.to_sql('BibliografiaAsignaturas', engine, if_exists="replace", index=False)
+    df_bibliografia_asignatura.to_sql('bibliografiaasignaturas', engine, if_exists="append", index=False)
 
 #############################################################################################################################################################################
 # 2 - Contenidos de la asignatura                                                                                                                                           #
@@ -193,49 +205,35 @@ model = SentenceTransformer('distiluse-base-multilingual-cased-v2')
 
 es = Elasticsearch("http://elasticsearch:9200")
 
-index_name = "asignaturas"
+index_name = "asignaturas_prueba"
 
 mapping = {
     "mappings": {
         "properties": {
             "id_asignatura": {"type": "keyword"},
-            
+
             "competencias": {
                 "type": "nested",
                 "properties": {
                     "codigo": {"type": "keyword"},
-                    "texto": {"type": "text"},
-                    "vector": {
-                        "type": "dense_vector",
-                        "dims": 512,
-                        "similarity": "cosine"
-                    }
+                    "texto": {"type": "text"}
                 }
             },
 
-            "resultados": {
-                "type": "nested",
-                "properties": {
-                    "codigo": {"type": "keyword"},
-                    "texto": {"type": "text"},
-                    "vector": {
-                        "type": "dense_vector",
-                        "dims": 512,
-                        "similarity": "cosine"
-                    }
-                }
+            "competencias_vector":{
+                "type": "dense_vector",
+                "dims": 512,
+                "index": True,
+                "similarity": "cosine"
             },
 
-            "descripcion_asignatura": {
-                "type": "nested",
-                "properties": {
-                    "texto": {"type": "text"},
-                    "vector": {
-                        "type": "dense_vector",
-                        "dims": 512,
-                        "similarity": "cosine"
-                    }
-                }
+            "descripcion_asignatura": {"type": "text"},
+
+            "descripcion_vector":{
+                "type": "dense_vector",
+                "dims": 512,
+                "index": True,
+                "similarity": "cosine"
             },
 
             "temario": {
@@ -252,50 +250,42 @@ mapping = {
                     }
                 }
             },
+            
+            "conocimientos_previos":  {"type": "text"},
 
-            "conocimientos_previos": {
-                "type": "nested",
-                "properties": {
-                    "texto": {"type": "text"},
-                    "vector": {
-                        "type": "dense_vector",
-                        "dims": 512,
-                        "similarity": "cosine"
-                    }
-                }
+            "conocimientos_previos_vector":{
+                "type": "dense_vector",
+                "dims": 512,
+                "index": True,
+                "similarity": "cosine"
             },
 
-            "criterios_evaluacion": {
-                "type": "nested",
-                "properties": {
-                    "texto": {"type": "text"}
-                }
-            },
         }
     }
 }
-
 if not es.indices.exists(index=index_name):
-    es.indices.create(index=index_name, body=mapping)
+    es.indices.create(index="vector_example", body=index_name)
 
 documentos = []
 for file in os.listdir(directory):
     if file.endswith(".pdf"):
         ruta = os.path.join(directory, file)
-
+        df_asignatura = extract_asignatura(ruta)
+        id_asignatura, nombre_asignatura = df_asignatura['Nombre de la asignatura'].values[0].split(" - ", maxsplit=1)
+        
         ## Conocimientos previos recomendados
-        conocimientos_previos = extraer_conocimientos_previos(ruta, model)
+        conocimientos_previos, vector_conocimientos_previos = extraer_conocimientos_previos(ruta, model)
 
         # Competencias y resultados de aprendizaje
         ## Competencias de la asignatura
-        competencias = extraer_competencias(ruta, model)
+        competencias, vector_competencias = extraer_competencias(ruta, model)
 
         ## Resultados de aprendizaje
-        resultados = extraer_resultados_aprendizaje(ruta, model)
+        resultados, vector_resultados = extraer_resultados_aprendizaje(ruta, model)
 
         # Descripción de la asignatura y temario
         ## Descripción de la asignatura
-        descripcion_asignatura = extraer_descripcion_asignatura(ruta, model)
+        descripcion_asignatura, vector_descripcion = extraer_descripcion_asignatura(ruta, model)
 
         ## Temario de la asignatura
         temario_estructurado = estructurar_temario(extraer_temario_asignatura(ruta))
@@ -307,13 +297,14 @@ for file in os.listdir(directory):
         ################# INSERCIÓN #################
         #############################################
         documento = {
-            "id_asignatura": id_asignatura,
-            "competencias": competencias,
-            "resultados": resultados,
+            "id_asignatura":id_asignatura,
+            "competencias":competencias,
+            "competencias_vector":vector_competencias,
             "descripcion_asignatura": descripcion_asignatura,
-            "temario": temario_estructurado,
+            "descripcion_vector": vector_descripcion,
+            "temario":temario_estructurado,
             "conocimientos_previos": conocimientos_previos,
-            "criterios_evaluacion": criterios_evaluacion
+            "conocimientos_previos_vector": vector_conocimientos_previos,
         }
         documentos.append(documento)
 

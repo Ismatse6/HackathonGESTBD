@@ -53,7 +53,7 @@ upm:codigo rdf:type owl:DatatypeProperty ;
 upm:codigoTitulacion rdf:type owl:DatatypeProperty ;
            rdfs:domain upm:Titulacion ;
            rdfs:range xsd:string ;
-           rdfs:label "códigoTitulación"@es .
+           rdfs:label "código_titulación"@es .
 
 upm:creditosECTS rdf:type owl:DatatypeProperty ;
                  rdfs:domain upm:Asignatura ;
@@ -93,7 +93,37 @@ upm:tipo rdf:type owl:DatatypeProperty ;
 upm:direccionURL rdf:type owl:DatatypeProperty ;
            rdfs:domain upm:RecursoBibliografico ;
            rdfs:range xsd:string ;
-           rdfs:label "direccion_url"@es .  
+           rdfs:label "direccion_url"@es .
+
+upm:descripcion rdf:type owl:DatatypeProperty ;
+            rdfs:domain upm:Asignatura ;
+            rdfs:range xsd:string ;
+            rdfs:label "descripcion"@es .
+
+upm:conocimientosPrevios rdf:type owl:DatatypeProperty ;
+            rdfs:domain upm:Asignatura ;
+            rdfs:range xsd:string ;
+            rdfs:label "conocimientos_previos"@es .
+
+upm:competencia rdf:type owl:DatatypeProperty ;
+            rdfs:domain upm:Asignatura ;
+            rdfs:range xsd:string ;
+            rdfs:label "competencia"@es .
+
+upm:codigoCompetencia rdf:type owl:DatatypeProperty ;
+            rdfs:domain upm:Asignatura ;
+            rdfs:range xsd:string ;
+            rdfs:label "código_competencia"@es .
+
+upm:tema rdf:type owl:DatatypeProperty ;
+            rdfs:domain upm:Asignatura ;
+            rdfs:range xsd:string ;
+            rdfs:label "tema"@es .
+
+upm:subtema rdf:type owl:DatatypeProperty ;
+            rdfs:domain upm:Asignatura ;
+            rdfs:range xsd:string ;
+            rdfs:label "subtema"@es .
 
 ###############################################################################
 # Object properties (relaciones entre recursos)

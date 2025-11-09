@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote
 from pathlib import Path
 import re
+from rdflib import URIRef
+from elasticsearch.helpers import bulk
 
 
 ######################
@@ -288,8 +290,6 @@ def scrapProfesores(ruta, encabezados_objetivo):
                 if tabla and len(tabla) > 1:  
                     tablas_pagina.append(tabla)
             tablas_por_pagina.append(tablas_pagina)
-
-
 
     # Buscar la tabla con los encabezados objetivo
     tabla_encontrada = None

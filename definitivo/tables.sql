@@ -56,7 +56,7 @@ CREATE TABLE TitulacionesAsignaturas (
     PRIMARY KEY (titulacion_id, asignatura_id)
 );
 
-CREATE TABLE BibliografiaAsignaturas (
+CREATE TABLE BibliograsfiaAsignaturas (
     asignatura_id INT NOT NULL,
     bibliografia_id INT NOT NULL,
     FOREIGN KEY (asignatura_id) REFERENCES Asignaturas(id),

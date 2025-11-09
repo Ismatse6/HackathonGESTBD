@@ -46,7 +46,6 @@ documentos = []
 for file in os.listdir(directory):
     if file.endswith(".pdf"):  
         pdf_path = os.path.join(directory, file)
-
         #############
         # Metadatos #
         #############
@@ -152,6 +151,8 @@ for file in os.listdir(directory):
         else:
             df_profesores_asignaturas_total = df_profesores_asignaturas.copy()
         
+        print("Metadatos descargados")
+
         #############
         # Contenido #
         #############
@@ -179,6 +180,7 @@ for file in os.listdir(directory):
             "conocimientos_previos_vector": vector_conocimientos_previos,
         }
         documentos.append(documento)
+        print("Contenido descargado")
 
 print("Datos descargados")
 
@@ -353,14 +355,14 @@ with engine.connect() as conn:
         g.add((prof_uri, UPM.correo, Literal(correo, datatype=XSD.string)))
 
     # Recursos bibliográficos 
-    """result = conn.execute(text("SELECT id, titulo, autores, direccion_url FROM Bibliografias;"))
+    result = conn.execute(text("SELECT * FROM Bibliografias;"))
     for id, titulo, autor, url in result:
         rec_uri = uri(UPM, "RecursoBibliografico", id)
         g.add((rec_uri, RDF.type, UPM.RecursoBibliografico))
         g.add((rec_uri, UPM.titulo, Literal(titulo, datatype=XSD.string)))
         g.add((rec_uri, UPM.autor, Literal(autor, datatype=XSD.string)))
         if url:
-            g.add((rec_uri, UPM.direccionURL, Literal(url, datatype=XSD.string)))"""
+            g.add((rec_uri, UPM.direccionURL, Literal(url, datatype=XSD.string)))
 
     # Relaciones Titulaciones ↔ Escuelas 
     result = conn.execute(text("SELECT titulacion_id, escuela_id FROM TitulacionesEscuelas;"))
@@ -377,6 +379,11 @@ with engine.connect() as conn:
     for asig_id, prof_id in result:
         g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneProfesor, uri(UPM, "Profesor", prof_id)))
 
+    # Relaciones Asignaturas ↔ Bibliografias 
+    result = conn.execute(text("SELECT * FROM BibliografiasAsignaturas;"))
+    for asig_id, bib_id in result:
+        g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneRecursoBibliografico, uri(UPM, "RecursoBibliografico", bib_id)))
+
 all_triples = []
 for s, p, o in g:
     triple_ttl = f"<{s}> <{p}> "
@@ -390,7 +397,9 @@ query = {"match_all": {}}
 res = es.search(index=index_name, query=query, size=1000)
 for hit in res['hits']['hits']:
     doc = hit['_source']
+    print(doc)
     all_triples.extend(doc_to_triples(doc))
+
 
 batch_size = 20
 for i in range(0, len(all_triples), batch_size):

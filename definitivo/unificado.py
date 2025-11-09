@@ -379,10 +379,10 @@ with engine.connect() as conn:
     for asig_id, prof_id in result:
         g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneProfesor, uri(UPM, "Profesor", prof_id)))
 
-    # Relaciones Asignaturas ↔ Bibliografias 
+    """# Relaciones Asignaturas ↔ Bibliografias 
     result = conn.execute(text("SELECT * FROM BibliografiasAsignaturas;"))
     for asig_id, bib_id in result:
-        g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneRecursoBibliografico, uri(UPM, "RecursoBibliografico", bib_id)))
+        g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneRecursoBibliografico, uri(UPM, "RecursoBibliografico", bib_id)))"""
 
 all_triples = []
 for s, p, o in g:

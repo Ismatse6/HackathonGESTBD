@@ -80,6 +80,6 @@ class TitulacionesAsignaturas(Base):
 
 
 class BibliografiasAsignaturas(Base):
-    __tablename__ = "BibliografiaAsignaturas"
+    __tablename__ = "BibliografiasAsignaturas"
     asignatura_id = Column(Integer, ForeignKey("Asignaturas.id"), primary_key=True)
     bibliografia_id = Column(Integer, ForeignKey("Bibliografias.id"), primary_key=True)

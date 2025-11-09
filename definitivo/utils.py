@@ -6,8 +6,6 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote
 from pathlib import Path
 import re
-from elasticsearch.helpers import bulk
-from rdflib import URIRef
 
 
 ######################
@@ -434,43 +432,30 @@ def extraer_descripcion_asignatura(ruta_pdf, model):
 
     return descripcion_texto, vector
 
-
-def extraer_competencias(texto, model):
-    """
-    Extrae competencias de un texto en formato:
-        '\nCodigo - Texto de la competencia'
-    
-    Parámetros:
-        texto (str): Texto completo con las competencias.
-    
-    Retorna:
-        list[dict]: Lista de competencias con campos 'codigo' y 'texto'.
-    """
-    codigos = re.findall(r'\n?(.*?)\s*-', texto)
-    
-    textos = re.split(r'\n.*?-', texto)
-    textos[0] = textos[0].split('-')[1]
+def extraer_competencias(entrada, model):
+    texto_competencias = extraer_seccion(
+        entrada,
+        titulo="Competencias y resultados de aprendizaje",
+        inicio="Competencias",
+        fin="Resultados del aprendizaje"
+    )
+    codigos = re.findall(r'\n?([A-Z]{2}\d+)\s*-\s*', texto_competencias)
+    textos = re.split(r'\n[A-Z]{2}\d+\s*-\s*', texto_competencias)
     textos = [t.replace('\n', ' ').strip() for t in textos if t.strip()]
-    
+
     competencias = []
-    
     for i, codigo in enumerate(codigos):
         texto_competencia = textos[i] if i < len(textos) else ""
         competencias.append({
             "codigo": codigo.strip(),
             "texto": texto_competencia,
         })
-    vector = model.encode(" ".join(textos)).tolist()      
-    return competencias, vector
+    if textos:
+        vector = model.encode(" ".join(textos)).tolist()
+    else:
+        vector = []
 
-def extraer_competencias(ruta, model):
-    texto_competencias = extraer_seccion(
-        ruta,
-        titulo = "Competencias y resultados de aprendizaje",
-        inicio = "Competencias",
-        fin = "Resultados del aprendizaje"
-    )
-    return  extraer_competencias(texto_competencias, model)
+    return competencias, vector
 
 def extraer_conocimientos_previos(pdf_path, model):
     extraido = extraer_seccion(pdf_path, titulo="Conocimientos previos recomendados", inicio="Asignaturas previas que se recomienda haber cursado", fin="Competencias")

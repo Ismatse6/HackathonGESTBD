@@ -1,6 +1,4 @@
 import pandas as pd
-import time
-import random
 import os
 import requests
 from utils import (
@@ -20,7 +18,6 @@ from utils import (
 from elasticsearch import Elasticsearch
 from sqlalchemy import create_engine, text
 from sentence_transformers import SentenceTransformer
-from tables import create_tables
 from rdflib import Graph, Literal, RDF, URIRef, Namespace, XSD
 
 # Variables iniciales
@@ -103,7 +100,7 @@ for file in os.listdir(directory):
         }])
         df_titulaciones_asignaturas_total = pd.concat([df_titulaciones_asignaturas_total, df_titulacion_asignatura], ignore_index=True)
         
-        # Bibliografia
+        """# Bibliografia
         df_scrap_bibliografia = scrapBibliography(pdf_path, {"nombre", "tipo", "observaciones"})  
         dfs_bibliografia = []
         for nombre in df_scrap_bibliografia['Nombre']:
@@ -132,7 +129,7 @@ for file in os.listdir(directory):
             )
         else:
             df_profesores_total = df_profesores.copy()
-        
+        """
         # Profesores - Asignaturas
         df_profesores_asignaturas = pd.DataFrame()
         for _, row in df_profesores.iterrows():
@@ -151,7 +148,7 @@ for file in os.listdir(directory):
         else:
             df_profesores_asignaturas_total = df_profesores_asignaturas.copy()
         
-        print("Metadatos descargados")
+        print(f"Metadatos descargados para el archivo {nombre_asignatura}")
 
         #############
         # Contenido #
@@ -181,7 +178,7 @@ for file in os.listdir(directory):
             "conocimientos_previos_vector": vector_conocimientos_previos,
         }
         documentos.append(documento)
-        print("Contenido descargado")
+        print(f"Contenido descargado  para el archivo {nombre_asignatura}")
 
 print("Datos descargados")
 
@@ -198,22 +195,25 @@ base_datos = "postgres"
 
 engine = create_engine(f"postgresql+psycopg2://{usuario}:{contraseña}@{host}:{puerto}/{base_datos}")
 
-create_tables(engine)
-
 # Cargar DataFrame Asignaturas
 df_asignaturas_total.to_sql('asignaturas', engine, if_exists="append", index=False)
+#df_asignaturas_total.to_csv('df_asignaturas_total.csv')
 
 # Cargar DataFrame Titulaciones
 df_titulaciones_total.to_sql('titulaciones', engine, if_exists="append", index=False)
+#df_titulaciones_total.to_csv('df_titulaciones_total.csv')
 
 # Cargar DataFrame Escuelas
 df_escuelas_total.to_sql('escuelas', engine, if_exists="append", index=False)
+#df_escuelas_total.to_csv('df_escuelas_total.csv')
 
 # Cargar DataFrame Titulaciones - Asignaturas
 df_titulaciones_asignaturas_total.to_sql('titulacionesasignaturas', engine, if_exists="append", index=False)
+#df_titulaciones_asignaturas_total.to_csv('df_titulaciones_asignaturas_total.csv')
 
 # Cargar DataFrame Titulaciones - Escuelas
 df_titulaciones_escuelas_total.to_sql('titulacionesescuelas', engine, if_exists="append", index=False)
+#df_titulaciones_escuelas_total.to_csv('df_titulaciones_escuelas_total.csv')
 
 # Cargar DataFrame Profesores
 df_profesores_total = df_profesores_total.rename(columns={
@@ -222,19 +222,23 @@ df_profesores_total = df_profesores_total.rename(columns={
 })
 df_profesores_total = df_profesores_total.reset_index().rename(columns={'index': 'id'})
 df_profesores_total.to_sql('profesores', engine, if_exists="append", index=False)
+#df_profesores_total.to_csv('df_profesores_total.csv')
 
 # Cargar DataFrame Profesores - Asignaturas
 df_profesores_asignaturas_total.to_sql('profesoresasignaturas', engine, if_exists="append", index=False)
-                
+#df_profesores_asignaturas_total.to_csv('df_profesores_asignaturas_total.csv')
+              
 # Cargar DataFrame Bibliografias
 df_bibliografia_total['id'] = df_bibliografia_total.index
 df_bibliografia_total.to_sql('bibliografias', engine, if_exists="append", index=False)
+#df_bibliografia_total.to_csv('df_bibliografia_total.csv')
 
 # Cargar DataFrame Bibliografias - Asignaturas
 if not df_bibliografia_total.empty:
     df_bibliografia_asignatura = pd.merge(df_bibliografia_asignatura, df_bibliografia_total, on= "Titulo", how ="inner")
     df_bibliografia_asignatura = df_bibliografia_asignatura[["id", "id_asignatura"]].rename(columns={"id": "bibliografia_id"})    
     df_bibliografia_asignatura.to_sql('bibliografiaasignaturas', engine, if_exists="append", index=False)
+    #df_bibliografia_asignatura.to_csv('df_bibliografia_asignatura.csv')
 
 # Almacenar Contenido -> ElasticSearch
 es = Elasticsearch("http://localhost:9200")
@@ -299,7 +303,6 @@ mapping = {
         }
     }
 }
-
 if not es.indices.exists(index=index_name):
     es.indices.create(index=index_name, body=mapping)
 bulk_index_data(es, documentos, index_name)
@@ -401,11 +404,9 @@ query = {"match_all": {}}
 res = es.search(index=index_name, query=query, size=1000)
 for hit in res['hits']['hits']:
     doc = hit['_source']
-    print(doc)
     all_triples.extend(doc_to_triples(doc))
 
-
-batch_size = 20
+batch_size = 50
 for i in range(0, len(all_triples), batch_size):
     batch = all_triples[i:i + batch_size]
     sparql_update = "INSERT DATA { " + "\n".join(batch) + " }"

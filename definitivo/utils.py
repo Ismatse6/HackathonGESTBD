@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 from rdflib import URIRef
 from elasticsearch.helpers import bulk
-
+import random
 
 ######################
 # Funciones Pipeline #
@@ -215,13 +215,30 @@ def scrapGoogleScholar(name):
     """
     url = f"https://scholar.google.com/scholar?q={quote(name)}"
 
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        )
-    }
+    headers_list = [
+            {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                            "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+            },
+            {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+                "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
+            },
+            {
+                "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:118.0) "
+                            "Gecko/20100101 Firefox/118.0",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+            {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+                            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            },
+    ]
+
+    headers = random.choice(headers_list)
 
     respuesta = requests.get(url, headers=headers)
 

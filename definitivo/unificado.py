@@ -1,5 +1,7 @@
 import pandas as pd
 import os
+import random
+import time
 import requests
 from utils import (
     extract_asignatura,
@@ -100,7 +102,7 @@ for file in os.listdir(directory):
         }])
         df_titulaciones_asignaturas_total = pd.concat([df_titulaciones_asignaturas_total, df_titulacion_asignatura], ignore_index=True)
         
-        """# Bibliografia
+        # Bibliografia
         df_scrap_bibliografia = scrapBibliography(pdf_path, {"nombre", "tipo", "observaciones"})  
         dfs_bibliografia = []
         for nombre in df_scrap_bibliografia['Nombre']:
@@ -112,12 +114,13 @@ for file in os.listdir(directory):
             except Exception as e:
                 print(f"Error con {nombre}: {e}")
             time.sleep(random.uniform(5, 20))
+
         if dfs_bibliografia:
             df_bibliografia = pd.concat(dfs_bibliografia, ignore_index=True)
             df_bibliografia_total =  pd.concat([df_bibliografia_total, df_bibliografia], ignore_index=True).drop_duplicates(subset=["Titulo"])
             list_bibliografias = df_bibliografia_total['Titulo'].dropna().unique()
             df_bibliografia_asignatura = pd.concat([df_bibliografia_asignatura,pd.DataFrame({'Titulo':list_bibliografias, 'id_asignatura': [id_asignatura]*len(list_bibliografias)})])
-
+        
         # Profesores
         df_profesores = scrapProfesores(pdf_path, {"nombre", "correo electrónico"})
         if not df_profesores_total.empty:
@@ -129,7 +132,7 @@ for file in os.listdir(directory):
             )
         else:
             df_profesores_total = df_profesores.copy()
-        """
+
         # Profesores - Asignaturas
         df_profesores_asignaturas = pd.DataFrame()
         for _, row in df_profesores.iterrows():

@@ -171,6 +171,7 @@ for file in os.listdir(directory):
 
         documento = {
             "id_asignatura":id_asignatura,
+            "nombre_asignatura": nombre_asignatura,
             "competencias":competencias,
             "competencias_vector":vector_competencias,
             "descripcion_asignatura": descripcion_asignatura,
@@ -245,6 +246,8 @@ mapping = {
         "properties": {
             "id_asignatura": {"type": "keyword"},
 
+            "nombre_asignatura": {"type": "text"},
+
             "competencias": {
                 "type": "nested",
                 "properties": {
@@ -296,6 +299,7 @@ mapping = {
         }
     }
 }
+
 if not es.indices.exists(index=index_name):
     es.indices.create(index=index_name, body=mapping)
 bulk_index_data(es, documentos, index_name)

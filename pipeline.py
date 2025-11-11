@@ -83,7 +83,7 @@ for file in os.listdir(directory):
             df_escuela = pd.DataFrame([{
                 "id": id_escuela,
                 "nombre": nombre_escuela,
-                "entidad_dbpedia": "https://es.dbpedia.org/resource/Escuela_Técnica_Superior_de_Ingeniería_de_Sistemas_Informáticos_(Universidad_Politécnica_de_Madrid)"
+                "entidad_dbpedia": "http://es.dbpedia.org/resource/Escuela_Técnica_Superior_de_Ingeniería_de_Sistemas_Informáticos_(Universidad_Politécnica_de_Madrid)"
             }])
             df_escuelas_total = pd.concat([df_escuelas_total, df_escuela], ignore_index=True)
         
@@ -120,6 +120,7 @@ for file in os.listdir(directory):
             df_bibliografia_total =  pd.concat([df_bibliografia_total, df_bibliografia], ignore_index=True).drop_duplicates(subset=["Titulo"])
             list_bibliografias = df_bibliografia_total['Titulo'].dropna().unique()
             df_bibliografia_asignatura = pd.concat([df_bibliografia_asignatura,pd.DataFrame({'Titulo':list_bibliografias, 'id_asignatura': [id_asignatura]*len(list_bibliografias)})])
+        
         
         # Profesores
         df_profesores = scrapProfesores(pdf_path, {"nombre", "correo electrónico"})
@@ -224,7 +225,7 @@ df_profesores_total = df_profesores_total.rename(columns={
     "Correo electrónico": "correo_electronico"
 })
 df_profesores_total = df_profesores_total.reset_index().rename(columns={'index': 'id'})
-df_profesores_total.to_sql('profesores', engine, if_exists="append", index=False)
+#df_profesores_total.to_sql('profesores', engine, if_exists="append", index=False)
 #df_profesores_total.to_csv('df_profesores_total.csv')
 
 # Cargar DataFrame Profesores - Asignaturas
@@ -335,7 +336,7 @@ with engine.connect() as conn:
         g.add((escuela_uri, UPM.nombre, Literal(nombre, datatype=XSD.string)))
         g.add((escuela_uri, UPM.codigo, Literal(id, datatype=XSD.integer)))
         if entidad:
-            g.add((escuela_uri, UPM.entidad_dbpedia, Literal(entidad, datatype=XSD.string)))
+            g.add((escuela_uri, UPM.entidad_dbpedia, URIRef(entidad)))
 
     # Titulaciones
     result = conn.execute(text("SELECT id, nombre, tipo_estudio FROM Titulaciones;"))

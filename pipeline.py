@@ -37,6 +37,8 @@ df_titulaciones_total = pd.DataFrame()
 df_titulaciones_escuelas_total = pd.DataFrame()
 df_titulaciones_asignaturas_total = pd.DataFrame()
 
+error_bibliografias = False
+
 documentos = []
 
 ################################
@@ -74,7 +76,7 @@ for file in os.listdir(directory):
             df_titulacion = pd.DataFrame([{
                 "id": plan_estudios,
                 "nombre": nombre_titulacion,
-                "tipo_estudio": "Grado" if "Grado" in plan_estudios else "Máster"
+                "tipo_estudio": "Grado" if "Grado" in nombre_titulacion else "Máster"
             }])
             df_titulaciones_total = pd.concat([df_titulaciones_total, df_titulacion], ignore_index=True)
 
@@ -103,23 +105,26 @@ for file in os.listdir(directory):
         df_titulaciones_asignaturas_total = pd.concat([df_titulaciones_asignaturas_total, df_titulacion_asignatura], ignore_index=True)
         
         # Bibliografia
-        df_scrap_bibliografia = scrapBibliography(pdf_path, {"nombre", "tipo", "observaciones"})  
-        dfs_bibliografia = []
-        for nombre in df_scrap_bibliografia['Nombre']:
-            try:
-                dict_bibliografia = scrapGoogleScholar(nombre)
-                if dict_bibliografia and "Titulo" in dict_bibliografia:
-                    df_bibliografia = pd.DataFrame([dict_bibliografia])
-                    dfs_bibliografia.append(df_bibliografia)
-            except Exception as e:
-                print(f"Error con {nombre}: {e}")
-            time.sleep(random.uniform(5, 20))
+        if not error_bibliografias:
+            df_scrap_bibliografia = scrapBibliography(pdf_path, {"nombre", "tipo", "observaciones"})  
+            dfs_bibliografia = []
+            for nombre in df_scrap_bibliografia['Nombre']:
+                try:
+                    dict_bibliografia = scrapGoogleScholar(nombre)
+                    if dict_bibliografia and "Titulo" in dict_bibliografia:
+                        df_bibliografia = pd.DataFrame([dict_bibliografia])
+                        dfs_bibliografia.append(df_bibliografia)
+                except Exception as e:
+                    print(f"Error con {nombre}: {e}")
+                    error_bibliografias = True
+                    break
+                time.sleep(random.uniform(5, 20))
 
-        if dfs_bibliografia:
-            df_bibliografia = pd.concat(dfs_bibliografia, ignore_index=True)
-            df_bibliografia_total =  pd.concat([df_bibliografia_total, df_bibliografia], ignore_index=True).drop_duplicates(subset=["Titulo"])
-            list_bibliografias = df_bibliografia_total['Titulo'].dropna().unique()
-            df_bibliografia_asignatura = pd.concat([df_bibliografia_asignatura,pd.DataFrame({'Titulo':list_bibliografias, 'id_asignatura': [id_asignatura]*len(list_bibliografias)})])
+            if dfs_bibliografia:
+                df_bibliografia = pd.concat(dfs_bibliografia, ignore_index=True)
+                df_bibliografia_total =  pd.concat([df_bibliografia_total, df_bibliografia], ignore_index=True).drop_duplicates(subset=["Titulo"])
+                list_bibliografias = df_bibliografia_total['Titulo'].dropna().unique()
+                df_bibliografia_asignatura = pd.concat([df_bibliografia_asignatura,pd.DataFrame({'Titulo':list_bibliografias, 'id_asignatura': [id_asignatura]*len(list_bibliografias)})])
         
         
         # Profesores
@@ -225,7 +230,7 @@ df_profesores_total = df_profesores_total.rename(columns={
     "Correo electrónico": "correo_electronico"
 })
 df_profesores_total = df_profesores_total.reset_index().rename(columns={'index': 'id'})
-#df_profesores_total.to_sql('profesores', engine, if_exists="append", index=False)
+df_profesores_total.to_sql('profesores', engine, if_exists="append", index=False)
 #df_profesores_total.to_csv('df_profesores_total.csv')
 
 # Cargar DataFrame Profesores - Asignaturas

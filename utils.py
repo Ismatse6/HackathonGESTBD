@@ -376,31 +376,18 @@ def extraer_seccion(ruta_pdf, titulo=None, inicio=None, fin=None):
     """
     Extrae una sección genérica de una guía en PDF usando pdfplumber.
 
-    Parámetros:
-        ruta_pdf (str): Ruta del archivo PDF.
-        titulo (str): Título principal de la sección (ej. 'Descripción de la asignatura y temario').
-        inicio (str): Subtítulo o punto de inicio del bloque (ej. 'Descripción de la asignatura').
-        fin (str): Subtítulo o punto final del bloque (ej. 'Temario de la asignatura').
-
-    Devuelve:
-        str: Texto extraído entre los límites indicados, o el texto más cercano posible si faltan.
+    Devuelve únicamente la sección delimitada por título, inicio y fin.
+    Si no encuentra algún límite, devuelve cadena vacía.
     """
-    _, paginas_recortadas = extraer_texto_limpio(ruta_pdf) # Importante tener la función de eliminar encabezados y pies de página
+    _, paginas_recortadas = extraer_texto_limpio(ruta_pdf)
 
     texto_a_buscar = ""
-    for page in paginas_recortadas[2:]:  # omitimos portada e índice
+    for page in paginas_recortadas[2:]:
         texto = page.extract_text()
         if texto:
             texto_a_buscar += texto + "\n"
 
-    # Si no se pasa nada, devolvemos todo el texto limpio
-    if not any([titulo, inicio, fin]):
-        return texto_a_buscar.strip()
-
     def patron_dinamico(texto, es_subtitulo=False):
-        """
-        Genera un patrón regex flexible con numeración opcional (4., 5.1., etc.)
-        """
         if not texto:
             return None
         if es_subtitulo:
@@ -412,29 +399,43 @@ def extraer_seccion(ruta_pdf, titulo=None, inicio=None, fin=None):
     patron_inicio = patron_dinamico(inicio, es_subtitulo=True)
     patron_fin = patron_dinamico(fin, es_subtitulo=True)
 
-    # Paso 1: localizar el título principal si existe
-    texto_post_titulo = texto_a_buscar
+    # Paso 1: localizar el título principal
     if patron_titulo:
         match_titulo = re.search(patron_titulo, texto_a_buscar, flags=re.IGNORECASE)
-        if match_titulo:
-            texto_post_titulo = texto_a_buscar[match_titulo.end():]
+        if not match_titulo:
+            return ""  # No encontró el título
+        texto_post_titulo = texto_a_buscar[match_titulo.end():]
+    else:
+        texto_post_titulo = texto_a_buscar
 
-    # Paso 2: buscar el inicio y fin dentro del texto posterior al título
-    match_inicio = re.search(patron_inicio, texto_post_titulo, flags=re.IGNORECASE) if patron_inicio else None
-    match_fin = re.search(patron_fin, texto_post_titulo, flags=re.IGNORECASE) if patron_fin else None
+    # Paso 2: buscar inicio y fin dentro del texto posterior al título
+    if patron_inicio:
+        match_inicio = re.search(patron_inicio, texto_post_titulo, flags=re.IGNORECASE)
+        if not match_inicio:
+            return ""  # No encontró el inicio
+    else:
+        match_inicio = None
 
-    # Casos posibles
+    if patron_fin:
+        match_fin = re.search(patron_fin, texto_post_titulo, flags=re.IGNORECASE)
+        if not match_fin:
+            return ""  # No encontró el fin
+    else:
+        match_fin = None
+
+    # Extraer según los matches encontrados
     if match_inicio and match_fin:
         texto_extraido = texto_post_titulo[match_inicio.end():match_fin.start()]
     elif match_inicio and not match_fin:
         texto_extraido = texto_post_titulo[match_inicio.end():]
-    elif not match_inicio and patron_titulo:
-        texto_extraido = texto_post_titulo
+    elif not match_inicio and match_fin:
+        texto_extraido = texto_post_titulo[:match_fin.start()]
     else:
-        # Si no encuentra nada, devolvemos algo razonable
-        texto_extraido = texto_a_buscar
+        # Si no hay inicio ni fin, devolvemos vacío
+        return ""
 
     return texto_extraido.strip()
+
 
 ## Descripción de la asignatura
 def extraer_descripcion_asignatura(ruta_pdf, model):
@@ -486,57 +487,25 @@ def extraer_conocimientos_previos(pdf_path, model):
 
     return conocimientos_previos, vector
 
+
 def extraer_temario_asignatura(ruta_pdf):
     """
-    Extrae la sección 'Temario de la asignatura' de un PDF limpio usando páginas recortadas.
+    Extrae la sección 'Temario de la asignatura' de un PDF limpio.
     Considera listas enumeradas jerárquicas y corta al detectar la siguiente sección.
+    Elimina la última línea no numerada y el último tema de la lista.
     """
-    _, paginas_recortadas = extraer_texto_limpio(ruta_pdf)
+    texto = extraer_seccion(ruta_pdf, "Descripción de la asignatura y temario", "Temario de la asignatura", "Cronograma")
+    
+    if not texto:
+        return ""  # No se encontró sección
 
-    texto_a_buscar = ""
-    for page in paginas_recortadas[2:]:
-        texto = page.extract_text()
-        if texto:
-            texto_a_buscar += texto + "\n"
+    # Separar en líneas y eliminar la última
+    lineas = texto.splitlines()
+    if lineas:
+        lineas.pop()  # elimina la última línea
 
-    patron_temario = r"\b\d+\.\d+\.\s*Temario\s+de\s+la\s+asignatura\b"
-    match_temario = re.search(patron_temario, texto_a_buscar, flags=re.IGNORECASE)
-    if not match_temario:
-        return "No se encontró el subtítulo 'Temario de la asignatura'."
+    return "\n".join(lineas).strip()
 
-    texto_post_temario = texto_a_buscar[match_temario.end():]
-    lineas = texto_post_temario.splitlines()
-
-    temario = []
-    inicio_lista = False
-    ultimo_numero_principal = None
-
-    patron_lista = re.compile(r"^(\d+)(\.\d+)*\.\s+.+")  # patrón lista enumerada
-
-    for linea in lineas:
-        linea = linea.strip()
-        if not linea:
-            continue
-
-        match_item = patron_lista.match(linea)
-        if match_item:
-            numero_principal = int(match_item.group(1))  # primer número
-            if ultimo_numero_principal is not None:
-                # Detectamos salto en numeración -> fin del temario
-                if numero_principal > ultimo_numero_principal + 1:
-                    break
-            ultimo_numero_principal = numero_principal
-            inicio_lista = True
-            temario.append(linea)
-        else:
-            if not inicio_lista:
-                # Texto preliminar antes de la lista
-                temario.append(linea)
-            else:
-                # Hemos empezado la lista y encontramos línea no numerada -> fin del temario
-                break
-
-    return "\n".join(temario).strip()
 
 def estructurar_temario(temario_texto):
     """

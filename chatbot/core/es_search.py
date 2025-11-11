@@ -1,37 +1,153 @@
 from typing import List, Literal
 
 from elasticsearch import Elasticsearch
+from sentence_transformers import SentenceTransformer
 
 Sections = Literal[
-    "descripcion_asignatura",
-    "competencias.texto",
-    "temario.titulo",
-    "conocimientos_previos",
+    "descripcion_vector",
+    "competencias_vector",
+    "conocimientos_previos_vector",
 ]
 
 
-def es_field_search(
-    es: Elasticsearch, index: str, asig_id: str, field: Sections
-) -> List[str]:
-    body = {
-        "query": {
-            "bool": {
-                "filter": [{"term": {"id_asignatura": asig_id}}],
-                "must": [{"exists": {"field": field}}],
-            }
-        },
-        "_source": [field],
-        "size": 3,
+def es_temario_search(es: Elasticsearch, index: str, id_asignatura: str) -> List[str]:
+    query = {
+        "query": {"term": {"id_asignatura": id_asignatura}},
+        "_source": ["temario"],
     }
-    resp = es.search(index=index, body=body)
-    chunks: List[str] = []
-    for h in resp.get("hits", {}).get("hits", []):
-        src = h.get("_source", {})
-        val = src
-        for k in field.split("."):
-            val = val.get(k)
-            if val is None:
-                break
-        if isinstance(val, str):
-            chunks.append(val)
+
+    res = es.search(index=index, body=query)
+    temario_list = []
+
+    for hit in res.get("hits", {}).get("hits", []):
+        temario = hit.get("_source", {}).get("temario", [])
+        for tema in temario:
+            temario_list.append(
+                f"Tema {tema.get('numero', '')}: {tema.get('titulo', '')}"
+            )
+
+            for subtema in tema.get("subtemas", []):
+                temario_list.append(
+                    f"\tSubtema {subtema.get('numero', '')}: {subtema.get('titulo', '')}"
+                )
+
+    return temario_list
+
+
+def es_competencias_search(
+    es: Elasticsearch, index: str, id_asignatura: str
+) -> List[str]:
+    query = {
+        "query": {"term": {"id_asignatura": id_asignatura}},
+        "_source": ["competencias"],
+    }
+
+    res = es.search(index=index, body=query)
+    competencias_list = []
+
+    for hit in res.get("hits", {}).get("hits", []):
+        competencias = hit.get("_source", {}).get("competencias", [])
+        for comp in competencias:
+            codigo = comp.get("codigo", "")
+            texto = comp.get("texto", "")
+            if codigo:
+                competencias_list.append(f"Competencia {codigo}: {texto}")
+            else:
+                competencias_list.append(f"Competencia: {texto}")
+
+    return competencias_list
+
+
+def es_descripcion_search(
+    es: Elasticsearch, index: str, id_asignatura: str
+) -> List[str]:
+    query = {
+        "query": {"term": {"id_asignatura": id_asignatura}},
+        "_source": ["descripcion_asignatura"],
+    }
+
+    res = es.search(index=index, body=query)
+    descripcion_list = []
+
+    for hit in res.get("hits", {}).get("hits", []):
+        descripcion = hit.get("_source", {}).get("descripcion_asignatura", "")
+        if descripcion:
+            descripcion_list.append(descripcion)
+
+    return descripcion_list
+
+
+def es_conocimientos_previos_search(
+    es: Elasticsearch, index: str, id_asignatura: str
+) -> List[str]:
+    query = {
+        "query": {"term": {"id_asignatura": id_asignatura}},
+        "_source": ["conocimientos_previos"],
+    }
+
+    res = es.search(index=index, body=query)
+    conocimientos_list = []
+
+    for hit in res.get("hits", {}).get("hits", []):
+        conocimientos = hit.get("_source", {}).get("conocimientos_previos", "")
+        if conocimientos:
+            conocimientos_list.append(conocimientos)
+
+    return conocimientos_list
+
+
+def es_field_search(
+    es: Elasticsearch, index: str, query_text: str, field: Sections
+) -> List[str]:
+    model = SentenceTransformer("distiluse-base-multilingual-cased-v2")
+    query_vector = model.encode(query_text).tolist()
+
+    match field:
+        case "descripcion_vector":
+            source = ["nombre_asignatura", "descripcion_asignatura"]
+        case "conocimientos_previos_vector":
+            source = ["nombre_asignatura", "conocimientos_previos"]
+        case "competencias_vector":
+            source = ["nombre_asignatura", "competencias"]
+
+    res = es.search(
+        index=index,
+        size=3,
+        knn={
+            "field": field,
+            "query_vector": query_vector,
+            "k": 5,
+            "num_candidates": 100,
+        },
+        _source=source,
+    )
+
+    chunks = []
+
+    if field == "competencias_vector":
+        for hit in res.get("hits", {}).get("hits", []):
+            competencias = hit.get("_source", {}).get("competencias", [])
+            for comp in competencias:
+                codigo = comp.get("codigo", "")
+                texto = comp.get("texto", "")
+                if codigo:
+                    chunks.append(f"Competencia {codigo}: {texto}")
+                else:
+                    chunks.append(f"Competencia: {texto}")
+
+    else:
+        for hit in res.get("hits", {}).get("hits", []):
+            src = hit.get("_source", {})
+            for field in source:
+                val = src
+                for subk in field.split("."):
+                    if not isinstance(val, dict):
+                        val = None
+                        break
+                    val = val.get(subk)
+                    if val is None:
+                        break
+                if isinstance(val, str):
+                    chunks.append(val)
+
     return chunks

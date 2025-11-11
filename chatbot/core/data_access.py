@@ -9,8 +9,10 @@ from .models import MetaAsignatura
 from .sql import (
     SQL_FIND_ASIG_BY_NAME,
     SQL_GET_BIBLIO,
+    SQL_GET_ESCUELA,
     SQL_GET_META,
     SQL_GET_PROFES,
+    SQL_GET_TITULACION,
 )
 
 _engine: Optional[Engine] = None

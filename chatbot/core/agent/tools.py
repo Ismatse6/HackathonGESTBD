@@ -12,7 +12,14 @@ from ..data_access import (
     get_profes,
     get_titulacion,
 )
-from ..es_search import Sections, es_field_search
+from ..es_search import (
+    Sections,
+    es_competencias_search,
+    es_conocimientos_previos_search,
+    es_descripcion_search,
+    es_field_search,
+    es_temario_search,
+)
 from ..models import MetaAsignatura
 
 
@@ -48,6 +55,26 @@ def register_tools(agent: Agent) -> None:
         return get_escuela(asignatura_id)
 
     @agent.tool_plain
-    def fetch_es_section(asignatura_id: str, section: Sections) -> List[str]:
-        """Devuelve hasta 3 fragmentos textuales de ES para la sección pedida."""
-        return es_field_search(get_es(), ES_INDEX, asignatura_id, section)
+    def fetch_competencias(asignatura_id: str):
+        """Competencias enlazadas a la asignatura."""
+        return es_competencias_search(get_es(), ES_INDEX, asignatura_id)
+
+    @agent.tool_plain
+    def fetch_descripcion(asignatura_id: str):
+        """Descripción enlazada a la asignatura."""
+        return es_descripcion_search(get_es(), ES_INDEX, asignatura_id)
+
+    @agent.tool_plain
+    def fetch_conocimientos_previos(asignatura_id: str):
+        """Conocimientos previos enlazados a la asignatura."""
+        return es_conocimientos_previos_search(get_es(), ES_INDEX, asignatura_id)
+
+    @agent.tool_plain
+    def fetch_temario(asignatura_id: str):
+        """Temario enlazado a la asignatura."""
+        return es_temario_search(get_es(), ES_INDEX, asignatura_id)
+
+    @agent.tool_plain
+    def fetch_es_section(query: str, section: Sections) -> List[str]:
+        """Devuelve hasta 3 asignaturas cuya query tenga más relación con la sección pedida."""
+        return es_field_search(get_es(), ES_INDEX, query, section)

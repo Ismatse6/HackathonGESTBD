@@ -3,7 +3,15 @@ from typing import List, Optional
 from pydantic_ai import Agent
 
 from ..config import ES_INDEX
-from ..data_access import find_asignatura_id, get_biblio, get_es, get_meta, get_profes
+from ..data_access import (
+    find_asignatura_id,
+    get_biblio,
+    get_es,
+    get_escuela,
+    get_meta,
+    get_profes,
+    get_titulacion,
+)
 from ..es_search import Sections, es_field_search
 from ..models import MetaAsignatura
 
@@ -28,6 +36,16 @@ def register_tools(agent: Agent) -> None:
     def fetch_biblio(asignatura_id: str):
         """Bibliografía enlazada a la asignatura."""
         return get_biblio(asignatura_id)
+
+    @agent.tool_plain
+    def fetch_titulacion(asignatura_id: str):
+        """Titulación enlazada a la asignatura."""
+        return get_titulacion(asignatura_id)
+
+    @agent.tool_plain
+    def fetch_escuela(asignatura_id: str):
+        """Escuela enlazada a la titulación enlazada a la asignatura."""
+        return get_escuela(asignatura_id)
 
     @agent.tool_plain
     def fetch_es_section(asignatura_id: str, section: Sections) -> List[str]:

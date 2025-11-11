@@ -37,3 +37,23 @@ SQL_GET_BIBLIO = text(
     LIMIT 20
     """
 )
+
+
+SQL_GET_TITULACION = text(
+    """
+    SELECT t.nombre, t.tipo_estudio
+    FROM titulaciones t
+    JOIN titulacionesasignaturas at ON at.titulacion_id = t.id
+    WHERE at.asignatura_id = :id
+    """
+)
+
+SQL_GET_ESCUELA = text(
+    """
+    SELECT e.nombre
+    FROM escuelas e
+    JOIN titulaciones t ON t.escuela_id = e.id
+    JOIN titulacionesasignaturas at ON at.titulacion_id = t.id
+    WHERE at.asignatura_id = :id
+    """
+)

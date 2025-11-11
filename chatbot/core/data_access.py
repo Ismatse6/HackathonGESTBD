@@ -6,7 +6,12 @@ from sqlalchemy.engine import Engine
 
 from .config import ES_URL, PG_DSN
 from .models import MetaAsignatura
-from .sql import SQL_FIND_ASIG_BY_NAME, SQL_GET_BIBLIO, SQL_GET_META, SQL_GET_PROFES
+from .sql import (
+    SQL_FIND_ASIG_BY_NAME,
+    SQL_GET_BIBLIO,
+    SQL_GET_META,
+    SQL_GET_PROFES,
+)
 
 _engine: Optional[Engine] = None
 _es: Optional[Elasticsearch] = None
@@ -54,4 +59,20 @@ def get_biblio(asig_id: str) -> List[Dict[str, Any]]:
         return [
             dict(r)
             for r in conn.execute(SQL_GET_BIBLIO, {"id": asig_id}).mappings().all()
+        ]
+
+
+def get_titulacion(asig_id: str) -> List[Dict[str, Any]]:
+    with get_engine().begin() as conn:
+        return [
+            dict(r)
+            for r in conn.execute(SQL_GET_TITULACION, {"id": asig_id}).mappings().all()
+        ]
+
+
+def get_escuela(asig_id: str) -> List[Dict[str, Any]]:
+    with get_engine().begin() as conn:
+        return [
+            dict(r)
+            for r in conn.execute(SQL_GET_ESCUELA, {"id": asig_id}).mappings().all()
         ]

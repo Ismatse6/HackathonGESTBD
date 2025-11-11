@@ -153,12 +153,12 @@ async def stream_agent_reply(user_input: str) -> None:
 
 
 async def main():
-    st.set_page_config(page_title="🎓 Chat Guías", page_icon="🎓", layout="wide")
+    st.set_page_config(page_title="Chat Guías", page_icon="🎓", layout="wide")
     st.title("🎓 Chat de Guías de Aprendizaje")
 
     # Sidebar
     with st.sidebar:
-        st.header("Configuración")
+        st.header("Descripción")
         st.caption("Chatbot para consultar las Guías de Aprendizaje de la universidad.")
         if st.button("Reiniciar conversación"):
             st.session_state.messages = []

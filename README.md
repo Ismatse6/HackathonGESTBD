@@ -12,7 +12,8 @@ El proyecto está completamente desarrollado en **Python**. Los principales arch
 
 - **`Pipeline.py`**: se encarga de descargar los datos, procesar las guías docentes y materializar la información en el sistema.  
 - **`Utils.py`**: contiene funciones auxiliares utilizadas por `Pipeline.py`.  
-- **`Consultas.ipynb`**: cuaderno de Jupyter para realizar consultas sobre el sistema de datos.  
+- **`Consultas.ipynb`**: cuaderno de Jupyter para realizar consultas sobre el sistema de datos.
+- **`Chatbot`**: directorio que contiene el codigo para la ejecución de un chatbot que se alimente de los datos de nuestro sistema.
 
 ---
 

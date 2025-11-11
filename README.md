@@ -4,12 +4,9 @@ Este repositorio implementa un sistema para la **extracción**, **procesamiento*
 
 El sistema se apoya en tres tipos de almacenamiento, cada uno con un propósito específico:  
 
-- **Base de datos relacional (PostgreSQL):** almacena los metadatos del sistema. La imagen de Docker de esta base de datos se descarga del repositorio:
-git clone https://github.com/gestbd/PostgreSQL.git
-- **Base de datos no relacional (Elasticsearch):** almacena el contenido procesado de las guías docentes. La imagen de Docker de esta base de datos se descarga del repositorio:
-git clone https://github.com/gestbd/GraphDB.git
-- **Grafo de conocimiento (GraphDB):** almacena las tripletas de la ontología utilizada para enlazar y relacionar todos los datos. La imagen de Docker de este grafo de conocimientos se descarga del repositorio:
-git clone https://github.com/gestbd/Elasticsearch.git
+- **Base de datos relacional (PostgreSQL):** almacena los metadatos del sistema. La imagen de Docker de esta base de datos se descarga del repositorio  https://github.com/gestbd/PostgreSQL.git
+- **Base de datos no relacional (Elasticsearch):** almacena el contenido procesado de las guías docentes. La imagen de Docker de esta base de datos se descarga del repositorio https://github.com/gestbd/GraphDB.git
+- **Grafo de conocimiento (GraphDB):** almacena las tripletas de la ontología utilizada para enlazar y relacionar todos los datos. La imagen de Docker de este grafo de conocimientos se descarga del repositorio https://github.com/gestbd/Elasticsearch.git
 
 El proyecto está completamente desarrollado en **Python**. Los principales archivos de ejecución son:  
 

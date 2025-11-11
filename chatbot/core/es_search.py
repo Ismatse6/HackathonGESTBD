@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List, Literal, Set
 
 from elasticsearch import Elasticsearch
 from sentence_transformers import SentenceTransformer
@@ -97,57 +97,86 @@ def es_conocimientos_previos_search(
 
 
 def es_field_search(
-    es: Elasticsearch, index: str, query_text: str, field: Sections
+    es: Elasticsearch,
+    index: str,
+    query_text: str,
+    field: Sections,
+    *,
+    hits_size: int = 10,
+    max_subjects: int = 3,
 ) -> List[str]:
     model = SentenceTransformer("distiluse-base-multilingual-cased-v2")
     query_vector = model.encode(query_text).tolist()
 
     match field:
         case "descripcion_vector":
-            source = ["nombre_asignatura", "descripcion_asignatura"]
+            source = ["id_asignatura", "nombre_asignatura", "descripcion_asignatura"]
         case "conocimientos_previos_vector":
-            source = ["nombre_asignatura", "conocimientos_previos"]
+            source = ["id_asignatura", "nombre_asignatura", "conocimientos_previos"]
         case "competencias_vector":
-            source = ["nombre_asignatura", "competencias"]
+            source = ["id_asignatura", "nombre_asignatura", "competencias"]
 
     res = es.search(
         index=index,
-        size=3,
+        size=hits_size,
         knn={
             "field": field,
             "query_vector": query_vector,
-            "k": 5,
-            "num_candidates": 100,
+            "k": hits_size,
+            "num_candidates": max(hits_size * 5, 100),
         },
         _source=source,
     )
 
-    chunks = []
+    chunks: List[str] = []
+    seen_subjects: Set[str] = set()
 
-    if field == "competencias_vector":
-        for hit in res.get("hits", {}).get("hits", []):
-            competencias = hit.get("_source", {}).get("competencias", [])
-            for comp in competencias:
-                codigo = comp.get("codigo", "")
-                texto = comp.get("texto", "")
+    for hit in res.get("hits", {}).get("hits", []):
+        src = hit.get("_source", {}) or {}
+        nombre = src.get("nombre_asignatura") or "Asignatura"
+        asig_id = str(src.get("id_asignatura") or "?")
+        prefix = f"{asig_id} - {nombre}: "
+
+        if len(seen_subjects) >= max_subjects:
+            break
+        if nombre in seen_subjects:
+            continue
+
+        if field == "competencias_vector":
+            comps = src.get("competencias", []) or []
+            if not comps:
+                continue
+            seen_subjects.add(nombre)
+            for comp in comps:
+                codigo = (comp or {}).get("codigo") or ""
+                texto = (comp or {}).get("texto") or ""
+                if not texto:
+                    continue
                 if codigo:
-                    chunks.append(f"Competencia {codigo}: {texto}")
+                    chunks.append(f"{prefix}Competencia {codigo}: {texto}")
                 else:
-                    chunks.append(f"Competencia: {texto}")
+                    chunks.append(f"{prefix}Competencia: {texto}")
+            continue
 
-    else:
-        for hit in res.get("hits", {}).get("hits", []):
-            src = hit.get("_source", {})
-            for field in source:
-                val = src
-                for subk in field.split("."):
-                    if not isinstance(val, dict):
-                        val = None
-                        break
-                    val = val.get(subk)
-                    if val is None:
-                        break
-                if isinstance(val, str):
-                    chunks.append(val)
+        collected_any = False
+        tmp_chunks: List[str] = []
+        for key in source:
+            if key in ("nombre_asignatura", "id_asignatura"):
+                continue
+            val = src
+            for subk in key.split("."):
+                if not isinstance(val, dict):
+                    val = None
+                    break
+                val = val.get(subk)
+                if val is None:
+                    break
+            if isinstance(val, str) and val.strip():
+                tmp_chunks.append(prefix + val.strip())
+                collected_any = True
+
+        if collected_any:
+            seen_subjects.add(nombre)
+            chunks.extend(tmp_chunks)
 
     return chunks

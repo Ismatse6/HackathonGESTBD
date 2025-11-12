@@ -78,7 +78,7 @@ HERRAMIENTAS DISPONIBLES (úsalas SOLO cuando aporten datos necesarios):
    - query: el texto de la consulta del usuario (para búsqueda semántica).
    - Secciones disponibles: 
      - "descripcion_vector" → usa para “asignaturas que traten sobre X” u otras consultas relacionadas con la descripción de las asignaturas.
-     - "competencias_vector" → usa para “asignaturas que tengan X competencias”.
+     - "competencias_vector" → usa para “asignaturas que tengan X competencias” o "competencias más comunes".
      - "conocimientos_previos_vector" → usa para "asignaturas que tengan X conocimientos previos".
    - Si necesitas varias secciones, haz varias llamadas, pero evita duplicados.
    - Si una sección no existe, dilo sin inventar.

@@ -21,6 +21,7 @@ from elasticsearch import Elasticsearch
 from sqlalchemy import create_engine, text
 from sentence_transformers import SentenceTransformer
 from rdflib import Graph, Literal, RDF, URIRef, Namespace, XSD
+from tables import create_tables
 
 # Variables iniciales
 directory = "Guias Docentes"
@@ -203,6 +204,7 @@ puerto = "5432"
 base_datos = "postgres"
 
 engine = create_engine(f"postgresql+psycopg2://{usuario}:{contraseña}@{host}:{puerto}/{base_datos}")
+create_tables(engine)
 
 # Cargar DataFrame Asignaturas
 df_asignaturas_total.to_sql('asignaturas', engine, if_exists="append", index=False)
@@ -395,10 +397,10 @@ with engine.connect() as conn:
     for asig_id, prof_id in result:
         g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneProfesor, uri(UPM, "Profesor", prof_id)))
 
-    """# Relaciones Asignaturas ↔ Bibliografias 
-    result = conn.execute(text("SELECT * FROM BibliografiasAsignaturas;"))
+    # Relaciones Asignaturas ↔ Bibliografias 
+    result = conn.execute(text("SELECT * FROM BibliografiaAsignaturas;"))
     for asig_id, bib_id in result:
-        g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneRecursoBibliografico, uri(UPM, "RecursoBibliografico", bib_id)))"""
+        g.add((uri(UPM, "Asignatura", asig_id), UPM.tieneRecursoBibliografico, uri(UPM, "RecursoBibliografico", bib_id)))
 
 all_triples = []
 for s, p, o in g:

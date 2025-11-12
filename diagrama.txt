@@ -1,0 +1,53 @@
+flowchart TD
+  subgraph Fuente[" "]
+    FTITLE["<b><font size=4>Fuente</font></b>"]
+    A[Guias docentes PDF]
+  end
+
+  subgraph Ingesta[" "]
+    ITITLE["<b><font size=4>ETL</font></b>"]
+    P[Extraccion de informacion tabular y textual]
+  end
+
+  subgraph Almacenamiento[" "]
+    ATITLE["<b><font size=4>Almacenamiento</font></b>"]
+    PG[(PostgreSQL)]
+    ES[(Elasticsearch)]
+    GDB[(GraphDB)]
+  end
+
+  subgraph Visualizacion[" "]
+    VTITLE["<b><font size=4>Visualizacion</font></b>"]
+    Jupyter[Cuaderno]
+    Bot[Chatbot]
+  end
+
+  A --> P
+  P --> PG
+  P --> ES
+  PG --> GDB
+  ES --> GDB
+
+  PG --> Jupyter
+  ES --> Jupyter
+  GDB --> Jupyter
+
+  PG --> Bot
+  ES --> Bot
+
+  classDef fuente fill:#f9f5d7,stroke:#d4b106,color:#000;
+  classDef ingesta fill:#d0ebff,stroke:#339af0,color:#000;
+  classDef almacen fill:#e6f4ea,stroke:#52b788,color:#000;
+  classDef visual fill:#f3d9fa,stroke:#b197fc,color:#000;
+  classDef titulo fill:transparent,stroke:transparent,color:#000,font-weight:bold,font-size:20px;
+
+  class A fuente;
+  class P ingesta;
+  class PG,ES,GDB almacen;
+  class Jupyter,Bot visual;
+  class FTITLE,ITITLE,ATITLE,VTITLE titulo;
+
+  style Fuente fill:transparent,stroke:transparent;
+  style Ingesta fill:transparent,stroke:transparent;
+  style Almacenamiento fill:transparent,stroke:transparent;
+  style Visualizacion fill:transparent,stroke:transparent;
